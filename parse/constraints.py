@@ -130,16 +130,23 @@ def parse(env, it, path, files, cond="True", consequences=[]):
                 implied.append(switch)
 
 if len(argv) < 2:
-    print("provide location of headers directory")
+    print("provide location cached directory")
     exit(1)
 
-headers = Path(argv[1])
+cache = Path(argv[1]).absolute()
+headers = cache.joinpath("headers")
+json = cache.joinpath("json")
+json.mkdir(exist_ok=True)
+zig = cache.joinpath("zig")
+zig.mkdir(exist_ok=True)
 
-for header in headers.glob("**/include/asm/unistd.h"):
-    print(f"==[ {header} ]==")
-    include_path = Path(*header.parts[:-2])
+for arch in headers.glob("*"):
+    print(f"==[ {arch} ]==")
+    include_path = arch.joinpath("include")
+    unistd = include_path.joinpath("asm", "unistd.h")
+
     lines = []
-    for line in subprocess.run(f"gcc -E -dD -fpreprocessed -P {header}", shell=True, check=True, capture_output=True, text=True).stdout.split("\n"):
+    for line in subprocess.run(f"gcc -E -dD -fpreprocessed -P {unistd}", shell=True, check=True, capture_output=True, text=True).stdout.split("\n"):
         if line.startswith("#"):
             parts = line.strip().split()
             parts = filter(lambda n: len(n) != 0, parts)
@@ -148,7 +155,7 @@ for header in headers.glob("**/include/asm/unistd.h"):
                 parts = [parts[0] + parts[1]] + parts[2:]
             lines.append(parts)
 
-    env = {"defined": defined, "__really_really_bad_consequences": Int('you-fucked-up'), }
+    env = {"defined": defined, }
     files = []
     constraints = parse(env, iter(lines), include_path, files)
     constraints = simplify(constraints)
@@ -163,19 +170,17 @@ for header in headers.glob("**/include/asm/unistd.h"):
 
         defines = []
         for var in m:
-            if str(var) in files:
-                continue
             value = m[var].as_long()
-            if value == 0:
+            if value == 0 or str(var) in files:
                 continue
             defines.append(f"-D {var}={value}")
         defines = " ".join(defines)
         #output = subprocess.run(f"gcc -dD -E -P {defines} {include_path / file}", shell=True, check=True, capture_output=True, text=True).stdout.strip().split("\n")
-        output = subprocess.run(f"zig translate-c {defines} -I {include_path} {include_path / 'asm/unistd.h'}", shell=True, check=True, capture_output=True, text=True).stdout.strip().split("\n")
+        output = subprocess.run(f"zig translate-c {defines} -I {include_path} {unistd}", shell=True, check=True, capture_output=True, text=True).stdout.strip().split("\n")
         output = map(lambda s: s.strip(), output)
         output = filter(nonempty, output)
         
-        arch = include_path.parent.name
+        archname = arch.stem
         abi = Path(file).stem
         if "_" in abi:
             abi = abi[abi.index("_")+1:]
@@ -183,5 +188,42 @@ for header in headers.glob("**/include/asm/unistd.h"):
             abi = abi[abi.index("-")+1:]
         else:
             abi = "generic"
-        with open(headers / f"{arch}-{abi}.nr", "w+") as f:
-            f.write("\n".join(output))
+        code = "\n".join(output)
+        code += """
+        const std = @import("std");
+        const mem = std.mem;
+        const json = std.json;
+        const module = @This();
+
+        pub fn main() !void {
+            const fields = @typeInfo(module).Struct.decls;
+            const stdout = std.io.getStdOut();
+            var write_stream = json.writeStream(stdout.writer(), .{ .whitespace = .indent_4 });
+            defer write_stream.deinit();
+            try write_stream.beginObject();
+            inline for (fields) |field| {
+                const name = field.name;
+                comptime {
+                    @setEvalBranchQuota(10000000);
+                    var ok = false;
+                    if (mem.indexOf(u8, name, "_NR_")) |i| {
+                        if (std.ascii.isLower(name[i + 4])) {
+                            ok = true;
+                        }
+                    }
+                    if (!ok) continue;
+                }
+                try write_stream.objectField(name);
+                try write_stream.write(@field(module, name));
+            }
+            try write_stream.endObject();
+        }
+        """
+
+        generate = zig / f"{archname}-{abi}.zig"
+        with open(generate, "w+") as f:
+            f.write(code)
+        output = subprocess.run(f"zig run {generate}", shell=True, check=True, capture_output=True, text=True).stdout
+        syscalls = json / f"{archname}-{abi}.json"
+        with open(syscalls, "w+") as f:
+            f.write(output)
