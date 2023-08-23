@@ -2,7 +2,8 @@
 	export let labelText: string;
 	export let options: { [key: string]: string[] };
   export let defaultVal: string;
-	import { createSelect, melt } from '@melt-ui/svelte';
+  export let onValueChange: CreateSelectProps["onValueChange"] = ({ next }) => next;
+	import { createSelect, melt, type CreateSelectProps } from '@melt-ui/svelte';
 	import { fly } from 'svelte/transition';
 	const {
 		elements: { trigger, menu, option, group, groupLabel, label },
@@ -15,7 +16,8 @@
 			fitViewport: true,
 			sameWidth: true
 		},
-		defaultValue: defaultVal
+		defaultValue: defaultVal,
+		onValueChange,
 	});
 </script>
 
@@ -27,7 +29,7 @@
 		use:melt={$trigger}
 		aria-label={labelText}
 	>
-		{$valueLabel || "Loading..."}
+		{$valueLabel || "Unknown"}
 		<!-- <ChevronDown class="square-5" /> -->
 	</button>
 	{#if $open}
@@ -49,9 +51,9 @@
 					{#each arr as item}
 						<div
 							class="relative cursor-pointer rounded-md py-1 pl-8 pr-4 text-neutral-800
-              focus:z-10 focus:text-magnum-700
-            data-[highlighted]:bg-magnum-50 data-[selected]:bg-magnum-100
-            data-[highlighted]:text-magnum-900 data-[selected]:text-magnum-900"
+              focus:z-10 focus:text-slate-700
+            data-[highlighted]:bg-slate-50 data-[selected]:bg-slate-100
+            data-[highlighted]:text-slate-900 data-[selected]:text-slate-900"
 							use:melt={$option({ value: item, label: item })}
 						>
 							{#if $isSelected(item)}

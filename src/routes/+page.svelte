@@ -8,7 +8,7 @@
 </script>
 
 <table class="w-full overflow-hidden border-collapse rounded-md table-auto">
-	<thead class="sticky top-0 h-16 text-lg bg-slate-100">
+	<thead class="sticky top-0 h-12 text-lg bg-slate-100">
 		<tr>
 			<th>nr</th>
 			<th>name</th>
