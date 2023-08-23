@@ -3,8 +3,8 @@
 	import searchTerm from '$lib/search';
 	import Fuse from 'fuse.js';
 	export let data: PageData;
-	let lst = Object.entries(data).map(([name, nr]) => ({ name, nr }));
-	const fuse = new Fuse(lst, { keys: ['name', 'nr'], threshold: 0.3 });
+	$: lst = Object.entries(data).map(([name, nr]) => ({ name, nr }));
+	$: fuse = new Fuse(lst, { keys: ['name', 'nr'], threshold: 0.3 });
 </script>
 
 <table class="w-full overflow-hidden border-collapse rounded-md table-auto">
