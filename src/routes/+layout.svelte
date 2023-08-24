@@ -22,8 +22,9 @@
 		v5: ['latest']
 	};
 
-	const arches = data.arches;
-	$: for (const [arch, abilist] of Object.entries(arches)) {
+	const arche = data.arches;
+	let arches = structuredClone(data.arches);
+	$: for (const [arch, abilist] of Object.entries(arche)) {
 		arches[arch] = abilist.map(abi => `${arch}-${abi}`);
 	}
 
@@ -35,8 +36,9 @@
 
 <svelte:body use:bindBody />
 
-<div class="min-h-screen transition-colors dark:text-neutral-100 dark:bg-black">
-	<header class="mx-8 h-[18vh]">
+<div class="flex flex-col h-screen transition-colors dark:text-neutral-100 dark:bg-black">
+	<header class="flex-grow-0 mx-8">
+		<!-- making this a fixed height is *REALLY* bad and needs to befixed -->
 		<nav class="mb-4">
 			<div class="flex flex-row justify-between pt-6">
 				<h1 class="text-lg font-bold">syscalls</h1>
@@ -136,10 +138,10 @@
 			{/if}
 		</div>
 	</header>
-	<main>
+	<main class="flex-1 overflow-y-scroll">
 		<slot />
 	</main>
-
+	<div class="flex-grow-0"></div>
 </div>
 
 <style lang="postcss">

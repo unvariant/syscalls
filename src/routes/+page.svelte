@@ -12,7 +12,6 @@
 
 <svelte:body
 	on:keydown={(e) => {
-		console.log(e);
 		if (e.key === 'Enter') {
 			swapNumberFormat = true;
 		}
