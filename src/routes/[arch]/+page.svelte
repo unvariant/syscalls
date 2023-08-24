@@ -4,7 +4,7 @@
 	import Fuse from 'fuse.js';
 	let swapNumberFormat = false;
 	export let data: PageData;
-	$: lst = Object.entries(data).map(([name, nr]) => ({ name, nr }));
+	$: lst = Object.entries(data.syscalls).map(([name, nr]) => ({ name, nr }));
 	$: fuse = new Fuse(lst, { keys: ['name', 'nr'], threshold: 0.3 });
 </script>
 
