@@ -51,10 +51,10 @@ class Signatures:
         # possibly merge the two searches into a single one
         # then determine which regex was matched afterwards
 
-        for match in self.search(rf"rg -g '{invert}{directory}' --multiline --multiline-dotall --json --type c 'asmlinkage\s+\w+\s+sys_([a-z0-9]_?)+\([^(]*?\);' ."):
+        for match in self.search(rf"rg -g '{invert}{directory}' --multiline --multiline-dotall --json --type c '^asmlinkage\s+\w+\s+sys_([a-z0-9]_?)+\(.*?\);' ."):
             text = match["lines"]["text"]
             name = text[text.index("sys_")+4:text.index("(")]
-            args = text[text.index("(")+1:text.rindex(");")].split(",")
+            args = text[text.index("(")+1:text.index(")")].split(",")
             args = map(lambda s: s.strip(), args)
             args = map(lambda arg: tuple(arg.rsplit(maxsplit=1)), args)
             args = list(args)
@@ -66,7 +66,7 @@ class Signatures:
             path = match["path"]["text"]
             line = match["line_number"]
             text = match["lines"]["text"]
-            name, *args = map(lambda s: s.strip(), text[len("SYSCALL_DEFINE")+2:text.rindex(")")].split(","))
+            name, *args = map(lambda s: s.strip(), text[len("SYSCALL_DEFINE")+2:text.index(")")].split(","))
             args = [(args[i], args[i + 1]) for i in range(0, len(args), 2)]
             syscalls[name] = {
                 "path": f"{path}:{line}",
