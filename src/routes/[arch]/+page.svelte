@@ -12,7 +12,6 @@
 		array.concat(new Array(length).fill(fillWith)).slice(0, length);
 
 	$: searchResults = $searchTerm ? fuse.search($searchTerm).map((x) => x.item) : data.syscalls;
-	$: console.log(searchResults.length);
 </script>
 
 <svelte:body
@@ -48,7 +47,7 @@
 						>
 							{nr > 1023 !== swapNumberFormat ? '0x' + nr.toString(16) : nr}
 						</td>
-						<td class="py-2 pl-3 border dark:border-neutral-800 border-slate-100">{name}</td>
+						<td class="px-3 py-2 border dark:border-neutral-800 border-slate-100">{name}</td>
 						{#each padArrayRight(args, 6, ['', '']) as [type, name]}
 							<td
 								class="px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100 whitespace-nowrap"
@@ -61,11 +60,10 @@
 				{/each}
 			</tbody>
 		</table>
-		<footer class="pt-16" />
 	{:else}
 		<div class="flex items-center justify-center h-full">
 			<div class="m-auto">
-				<p class="text-center text-slate-500 dark:text-neutral-400">No Reuslts Found</p>
+				<p class="text-xl font-semibold text-center text-slate-500 dark:text-neutral-400">No Reuslts Found</p>
 				<Icon src={FaceFrown} class="w-64 h-64 m-auto text-slate-400 dark:text-neutral-500" />
 			</div>
 		</div>
