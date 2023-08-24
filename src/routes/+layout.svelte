@@ -9,6 +9,7 @@
 	import { fade } from 'svelte/transition';
 	let body: HTMLBodyElement | null;
 	let darkMode = true;
+	export let data;
 
 	const bindBody = (node: any) => (body = node);
 
@@ -17,14 +18,14 @@
 		elements: { root }
 	} = createLabel();
 
-	const arches = {
-		x86: ['x86-32', 'x86-64', 'x86-x32'],
-		arm: ['arm-eabi', 'arm-oabi', 'arm64-generic']
-	};
-
 	const versions = {
 		v5: ['latest']
 	};
+
+	const arches = data.arches;
+	for (const [arch, abilist] of Object.entries(arches)) {
+		arches[arch] = abilist.map(abi => `${arch}-${abi}`);
+	}
 
 	const {
 		elements: { trigger, overlay, content, title, description, close, portalled },

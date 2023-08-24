@@ -13,10 +13,6 @@ class Signatures:
         self.cache = Path(cache).absolute()
         self.linux = self.cache.joinpath("linux")
         self.archnames = self.load_archnames()
-        self.generic = self.load_syscalls("arch/**", invert=True)
-        self.specific = {}
-        for arch in self.archnames:
-            self.specific[arch] = self.load_syscalls(f"arch/{arch}/**")
 
     def syscall(self, arch, name):
         if arch in self.specific:
@@ -66,3 +62,9 @@ class Signatures:
                 pprint(syscalls[name])
 
         return syscalls
+
+    def generate(self):
+        self.generic = self.load_syscalls("arch/**", invert=True)
+        self.specific = {}
+        for arch in self.archnames:
+            self.specific[arch] = self.load_syscalls(f"arch/{arch}/**")
