@@ -12,5 +12,5 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 cache/
-json/
-json
+# json/
+/json
