@@ -3,5 +3,5 @@ export const prerender = true;
 
 export const load: PageLoad = async ({ fetch }) => {
 	const res = await fetch('/json/x86-64.json');
-	return { syscalls: await res.json() };
+	return await res.json();
 };

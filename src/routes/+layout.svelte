@@ -23,7 +23,7 @@
 	};
 
 	const arches = data.arches;
-	for (const [arch, abilist] of Object.entries(arches)) {
+	$: for (const [arch, abilist] of Object.entries(arches)) {
 		arches[arch] = abilist.map(abi => `${arch}-${abi}`);
 	}
 
@@ -36,9 +36,9 @@
 <svelte:body use:bindBody />
 
 <div class="min-h-screen transition-colors dark:text-neutral-100 dark:bg-black">
-	<header class="mx-8">
+	<header class="mx-8 h-[18vh]">
 		<nav class="mb-4">
-			<div class="flex flex-row justify-between pt-8">
+			<div class="flex flex-row justify-between pt-6">
 				<h1 class="text-lg font-bold">syscalls</h1>
 				<div>
 					<button use:melt={$trigger}>
@@ -49,7 +49,7 @@
 					</button>
 				</div>
 			</div>
-			<div class="grid grid-cols-5 gap-2 mt-8">
+			<div class="grid grid-cols-5 gap-2 mt-4">
 				<Select
 					labelText="Arch"
 					options={arches}
@@ -139,7 +139,7 @@
 	<main>
 		<slot />
 	</main>
-	<footer class="pt-16" />
+
 </div>
 
 <style lang="postcss">
