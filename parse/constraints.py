@@ -5,18 +5,6 @@ import subprocess
 import logging
 import re
 
-set_option(max_args=10000000, max_lines=1000000, max_depth=10000000, max_visited=1000000)
-set_option('model_evaluator.completion', True)
-BoolRef.__or__ = lambda self, rhs: Or(self, rhs)
-BoolRef.__and__ = lambda self, rhs: And(self, rhs)
-BoolRef.__invert__ = lambda self: Not(self)
-logging.basicConfig(level=logging.ERROR)
-
-predefined = subprocess.run("gcc -E -dD -P - < /dev/null", shell=True, check=True, capture_output=True, text=True).stdout.strip().split("\n")
-predefined = map(lambda ln: ln.split()[1], predefined)
-predefined = list(map(lambda name: name[:name.index("(")] if "(" in name else name, predefined))
-nr_pattern = re.compile(r"_NR_[a-z]+")
-
 def isbadname(name):
     global predefined
     badsuffix = any([name.endswith(suffix) for suffix in ["_H", "_H_"]])
@@ -55,7 +43,7 @@ def fix(env, expr):
                 continue
 
 def include(env, path):
-    defines = subprocess.run(f"gcc -E -dD -P {path}", shell=True, check=True, capture_output=True, text=True).stdout.strip().split("\n")
+    defines = run(f"gcc -E -dD -P {path}").strip().split("\n")
     implies = []
     for ln in defines:
         if ln.startswith("#define"):
@@ -129,9 +117,66 @@ def parse(env, it, path, files, cond="True", consequences=[]):
             else:
                 implied.append(switch)
 
+def run(cmd):
+    return subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True).stdout
+
+def generate_syscalls(archname, abi, unistd, include_path, defines):
+    output = run(f"zig translate-c {defines} -I {include_path} {unistd}").strip().split("\n")
+    output = map(lambda s: s.strip(), output)
+    output = filter(nonempty, output)
+    
+    code = "\n".join(output)
+    code += """
+    const std = @import("std");
+    const mem = std.mem;
+    const json = std.json;
+    const module = @This();
+
+    pub fn main() !void {
+        const fields = @typeInfo(module).Struct.decls;
+        const stdout = std.io.getStdOut();
+        var write_stream = json.writeStream(stdout.writer(), .{ .whitespace = .minified });
+        defer write_stream.deinit();
+        try write_stream.beginObject();
+        inline for (fields) |field| {
+            const name = field.name;
+            comptime {
+                @setEvalBranchQuota(10000000);
+                var ok = false;
+                if (mem.indexOf(u8, name, "_NR_")) |i| {
+                    if (std.ascii.isLower(name[i + 4])) {
+                        ok = true;
+                    }
+                }
+                if (!ok) continue;
+            }
+            try write_stream.objectField(name[mem.indexOf(u8, name, "_NR_").? + 4 ..]);
+            try write_stream.write(@field(module, name));
+        }
+        try write_stream.endObject();
+    }
+    """
+
+    generate = zig / f"{archname}-{abi}.zig"
+    with open(generate, "w+") as f:
+        f.write(code)
+    output = run(f"zig run {generate}")
+    syscalls = json / f"{archname}-{abi}.json"
+    with open(syscalls, "w+") as f:
+        f.write(output)
+
 if len(argv) < 2:
     print("provide location cached directory")
     exit(1)
+
+BoolRef.__or__ = lambda self, rhs: Or(self, rhs)
+BoolRef.__and__ = lambda self, rhs: And(self, rhs)
+BoolRef.__invert__ = lambda self: Not(self)
+logging.basicConfig(level=logging.DEBUG)
+
+predefined = run("gcc -E -dD -P - < /dev/null").strip().split("\n")
+predefined = map(lambda ln: ln.split()[1], predefined)
+predefined = list(map(lambda name: name[:name.index("(")] if "(" in name else name, predefined))
 
 cache = Path(argv[1]).absolute()
 headers = cache.joinpath("headers")
@@ -144,9 +189,13 @@ for arch in headers.glob("*"):
     print(f"==[ {arch} ]==")
     include_path = arch.joinpath("include")
     unistd = include_path.joinpath("asm", "unistd.h")
+    archname = arch.stem
+
+    if not unistd.exists():
+        continue
 
     lines = []
-    for line in subprocess.run(f"gcc -E -dD -fpreprocessed -P {unistd}", shell=True, check=True, capture_output=True, text=True).stdout.split("\n"):
+    for line in run(f"gcc -E -dD -fpreprocessed -P {unistd}").split("\n"):
         if line.startswith("#"):
             parts = line.strip().split()
             parts = filter(lambda n: len(n) != 0, parts)
@@ -159,6 +208,11 @@ for arch in headers.glob("*"):
     files = []
     constraints = parse(env, iter(lines), include_path, files)
     constraints = simplify(constraints)
+
+    # if nothing gets included, simply parse unistd.h itself
+    if len(files) == 0:
+        generate_syscalls(archname, "generic", unistd, include_path, "")
+    # otherwise solve constraints for each unistd-XXX.h abi file
     for file in files:
         s = Solver()
         s.add(constraints)
@@ -175,12 +229,6 @@ for arch in headers.glob("*"):
                 continue
             defines.append(f"-D {var}={value}")
         defines = " ".join(defines)
-        #output = subprocess.run(f"gcc -dD -E -P {defines} {include_path / file}", shell=True, check=True, capture_output=True, text=True).stdout.strip().split("\n")
-        output = subprocess.run(f"zig translate-c {defines} -I {include_path} {unistd}", shell=True, check=True, capture_output=True, text=True).stdout.strip().split("\n")
-        output = map(lambda s: s.strip(), output)
-        output = filter(nonempty, output)
-        
-        archname = arch.stem
         abi = Path(file).stem
         if "_" in abi:
             abi = abi[abi.index("_")+1:]
@@ -188,42 +236,4 @@ for arch in headers.glob("*"):
             abi = abi[abi.index("-")+1:]
         else:
             abi = "generic"
-        code = "\n".join(output)
-        code += """
-        const std = @import("std");
-        const mem = std.mem;
-        const json = std.json;
-        const module = @This();
-
-        pub fn main() !void {
-            const fields = @typeInfo(module).Struct.decls;
-            const stdout = std.io.getStdOut();
-            var write_stream = json.writeStream(stdout.writer(), .{ .whitespace = .indent_4 });
-            defer write_stream.deinit();
-            try write_stream.beginObject();
-            inline for (fields) |field| {
-                const name = field.name;
-                comptime {
-                    @setEvalBranchQuota(10000000);
-                    var ok = false;
-                    if (mem.indexOf(u8, name, "_NR_")) |i| {
-                        if (std.ascii.isLower(name[i + 4])) {
-                            ok = true;
-                        }
-                    }
-                    if (!ok) continue;
-                }
-                try write_stream.objectField(name);
-                try write_stream.write(@field(module, name));
-            }
-            try write_stream.endObject();
-        }
-        """
-
-        generate = zig / f"{archname}-{abi}.zig"
-        with open(generate, "w+") as f:
-            f.write(code)
-        output = subprocess.run(f"zig run {generate}", shell=True, check=True, capture_output=True, text=True).stdout
-        syscalls = json / f"{archname}-{abi}.json"
-        with open(syscalls, "w+") as f:
-            f.write(output)
+        generate_syscalls(archname, abi, unistd, include_path, defines)

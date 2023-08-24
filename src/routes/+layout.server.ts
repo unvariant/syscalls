@@ -63,7 +63,7 @@ const parse_table = (file: string): Syscall[] => {
 }
 
 export const load: LayoutServerLoad = async () => {
-	const tag: string = "v6.5-rc6";
+	const tag: string = "v3.0";
 	const repo: string = "https://github.com/torvalds/linux";
     const kernel_dir = download(tag, repo);
     const cache_dir = path.dirname(kernel_dir);
