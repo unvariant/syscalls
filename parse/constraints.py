@@ -4,6 +4,7 @@ import subprocess
 import re
 import functools
 import logging
+import json
 
 def defined(var):
     return var != 0
@@ -31,7 +32,7 @@ def run(cmd):
     return subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True).stdout
 
 class Constraints:
-    def __init__(self, cache, json_dir):
+    def __init__(self, cache, json_dir, signatures):
         BoolRef.__or__ = lambda self, rhs: Or(self, rhs)
         BoolRef.__and__ = lambda self, rhs: And(self, rhs)
         BoolRef.__invert__ = lambda self: Not(self)
@@ -40,6 +41,7 @@ class Constraints:
         self.predefined = map(lambda ln: ln.split()[1], self.predefined)
         self.predefined = list(map(lambda name: name[:name.index("(")] if "(" in name else name, self.predefined))
 
+        self.signatures = signatures
         self.cache = Path(cache).absolute()
         self.linux = self.cache / "linux"
         self.headers = self.cache / "headers"
@@ -176,10 +178,7 @@ class Constraints:
         zig = self.zig / f"{identifier}.zig"
         with open(zig, "w+") as f:
             f.write(code)
-        output = run(f"zig run {zig}")
-        json = self.json / f"{identifier}.json"
-        with open(json, "w+") as f:
-            f.write(output)
+        return json.loads(run(f"zig run {zig}"))
 
     def generate(self):
         archinfo = {}
@@ -242,7 +241,20 @@ class Constraints:
                 identifier = f"{archname}-{abi}"
                 abilist.append(abi)
 
-                self._generate_syscalls(identifier, unistd, include, defines)
+                nr = self._generate_syscalls(identifier, unistd, include, defines)
+                syscalls = []
+                for name, nr in nr.items():
+                    info = self.signatures.syscall(archname, name)
+                    syscalls.append({
+                        "nr": nr,
+                        "name": name,
+                        "args": info["args"],
+                        "path": info["path"],
+                    })
+                with open(self.json / f"{identifier}.json", "w+") as f:
+                    json.dump({
+                        "syscalls": syscalls,
+                    }, f)
 
             archinfo[archname] = abilist
 

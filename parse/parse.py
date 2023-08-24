@@ -12,10 +12,11 @@ logging.basicConfig(level=logging.INFO)
 
 parser = argparse.ArgumentParser(
     prog="parse.py",
-    description="parse kernel source for syscall definitions", )
+    description="parse kernel source for syscall definitions",
+)
 parser.add_argument("--static", help="static file directory", required=True)
 parser.add_argument("--tag", help="kernel tag", required=True)
-parser.add_argument("action", choices=["signatures", "constraints"])
+# parser.add_argument("action", choices=["signatures", "constraints"])
 args = parser.parse_args()
 
 static = Path(args.static).absolute()
@@ -28,11 +29,9 @@ if not cache.exists():
     logging.error(f"cache directory {cache} does not exist")
     exit(1)
 
-match args.action:
-    case "signatures":
-        signatures = Signatures(cache)
-    case "constraints":
-        constraints = Constraints(cache, json_dir)
-        archinfo = constraints.generate()
-        with open(json_dir / "info.json", "w+") as f:
-            json.dump(archinfo, f)
+signatures = Signatures(cache)
+signatures.generate()
+constraints = Constraints(cache, json_dir, signatures)
+archinfo = constraints.generate()
+with open(json_dir / "info.json", "w+") as f:
+    json.dump(archinfo, f)
