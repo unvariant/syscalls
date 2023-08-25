@@ -16,12 +16,12 @@
 
 <svelte:body
 	on:keydown={(e) => {
-		if (e.key === 'Enter') {
+		if (e.key === 'h') {
 			swapNumberFormat = true;
 		}
 	}}
 	on:keyup={(e) => {
-		if (e.key === 'Enter') {
+		if (e.key === 'h') {
 			swapNumberFormat = false;
 		}
 	}}

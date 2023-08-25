@@ -16,12 +16,12 @@
 
 <svelte:body
 	on:keydown={(e) => {
-		if (e.key === 'Enter') {
+		if (e.key === 'h') {
 			swapNumberFormat = true;
 		}
 	}}
 	on:keyup={(e) => {
-		if (e.key === 'Enter') {
+		if (e.key === 'h') {
 			swapNumberFormat = false;
 		}
 	}}
@@ -29,7 +29,7 @@
 
 <div class="h-full overflow-x-scroll">
 	{#if searchResults.length !== 0}
-		<table class="border-collapse rounded-md table-auto">
+		<table class="min-w-full border-collapse rounded-md table-auto">
 			<thead class="sticky top-0 left-0 z-10 h-12 text-lg bg-slate-100 dark:bg-neutral-900">
 				<tr>
 					<th>nr</th>
@@ -48,7 +48,7 @@
 							{nr > 1023 !== swapNumberFormat ? '0x' + nr.toString(16) : nr}
 						</td>
 						<td class="px-3 py-2 border dark:border-neutral-800 border-slate-100">{name}</td>
-						{#each padArrayRight(args, 6, ['', '']) as [type, name]}
+						{#each padArrayRight(args.map(x => [x[0].replaceAll("const", "").replaceAll("__user", "").replaceAll(/\*\s+\*/g, "**").trim(), x[1]]), 6, ['', '']) as [type, name]}
 							<td
 								class="px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100 whitespace-nowrap"
 							>
