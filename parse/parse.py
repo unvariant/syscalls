@@ -8,7 +8,7 @@ from pathlib import Path
 import json
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(
     prog="parse.py",
@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("--static", help="static file directory", required=True)
 parser.add_argument("--tag", help="kernel tag", required=True)
-# parser.add_argument("action", choices=["signatures", "constraints"])
+# parser.add_argument("action", choices=["--debug", "--info"])
 args = parser.parse_args()
 
 static = Path(args.static).absolute()
@@ -31,6 +31,7 @@ if not cache.exists():
 
 signatures = Signatures(cache)
 signatures.generate()
+signatures.save()
 constraints = Constraints(cache, json_dir, signatures)
 archinfo = constraints.generate()
 with open(json_dir / "info.json", "w+") as f:

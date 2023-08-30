@@ -1,8 +1,6 @@
 from pathlib import Path
 from z3 import *
 import subprocess
-import re
-import functools
 import logging
 import json
 
@@ -14,19 +12,6 @@ def nonempty(lst):
 
 def conv(code):
     return code.replace("!", " ~ ").replace("||", " | ").replace("&&", " & ")
-
-def fix(env, expr):
-    while True:
-        try:
-            return eval(expr, env)
-        except NameError as e:
-            if not e.name in env:
-                env[e.name] = Int(e.name)
-                continue
-
-def compile(env, cond, implied, otherwise):
-    stmt = If(fix(env, cond), And(*implied), And(*otherwise))
-    return stmt
 
 def run(cmd):
     return subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True).stdout
@@ -56,18 +41,38 @@ class Constraints:
         badpredefined = name in self.predefined
         return any([badsuffix, badpredefined])
 
-    def define(self, env, name, value="1"):
+    def create(self, env, name):
+        if name not in env:
+            env[name] = Int(name)
+        return env[name]
+
+    def constrain(self, env, name, value):
         if self.isbadname(name):
             return True
-        value = fix(env, value)
+        value = self.fix(env, value)
         try:
             _ = IntVal(value)
-            if not name in env:
-                sym = Int(name)
-                env[name] = sym
-            return env[name] == value
+            return self.create(env, name) == value
         except Z3Exception:
             return True
+
+    def constant(self, env, name, value="1"):
+        if self.isbadname(name):
+            return True
+        value = self.fix(env, value)
+        try:
+            _ = IntVal(value)
+            env[name] = IntVal(value)
+        except Z3Exception:
+            pass
+        return True
+
+    def fix(self, env, expr):
+        while True:
+            try:
+                return eval(expr, env)
+            except NameError as e:
+                self.create(env, e.name)
 
     def include(self, env, path):
         defines = run(f"gcc -E -dD -P {path}").strip().split("\n")
@@ -81,20 +86,23 @@ class Constraints:
                 if len(value) == 0:
                     value = "1"
                 try:
-                    implies.append(self.define(env, name, value))
-                except (SyntaxError, NameError) as e:
+                    implies.append(self.constant(env, name, value))
+                except (SyntaxError, NameError):
                     logging.warning(f"failed to parse `{ln}`")
         return implies
 
+    def compile(self, env, cond, implied, otherwise):
+        return If(self.fix(env, cond), And(*implied), And(*otherwise))
+
     def parse(self, env, it, path, files, cond="True"):
         implied = []
-        otherwise = []
+        otherwise = [True]
 
         while True:
             try:
                 ln = next(it)
             except StopIteration:
-                return compile(env, cond, implied, otherwise)
+                return self.compile(env, cond, implied, otherwise)
 
             if len(ln) > 1:
                 name = ln[1]
@@ -112,18 +120,18 @@ class Constraints:
                 case "#elif":
                     check = conv(" ".join(ln[1:]))
                 case "#else":
-                    check = f"True"
+                    check = "True"
                 case "#endif":
-                    return compile(env, cond, implied, otherwise)
+                    return self.compile(env, cond, implied, otherwise)
                 case "#define":
                     if len(ln) == 2:
-                        implied.append(self.define(env, name))
+                        implied.append(self.constrain(env, name, "1"))
                     else:
-                        implied.append(self.define(env, name, " ".join(ln[2:])))
+                        implied.append(self.constrain(env, name, " ".join(ln[2:])))
                 case "#include":
                     name = name[1:-1].strip()
                     if "unistd" in name:
-                        implied.append(self.define(env, name))
+                        implied.append(self.constrain(env, name, "1"))
                         files.append(name)
                     else:
                         relative = path / name
@@ -131,10 +139,10 @@ class Constraints:
                         implied += self.include(env, relative)
 
             if cmd in ["#if", "#ifdef", "#ifndef", "#elif", "#else"]:
-                fix(env, check)
+                self.fix(env, check)
                 switch = self.parse(env, it, path, files, cond=check)
                 if cmd in ["#elif", "#else"]:
-                    return compile(env, cond, implied, [switch] + otherwise)
+                    return self.compile(env, cond, implied, [switch])
                 else:
                     implied.append(switch)
 
@@ -184,7 +192,7 @@ class Constraints:
         archinfo = {}
 
         for arch in self.headers.glob("*"):
-            include = self.linux / "arch" / arch / "include"
+            include = self.cache / "headers" / arch / "include"
             unistd = include / "asm" / "unistd.h"
             archname = arch.stem
             abilist = []
@@ -218,9 +226,10 @@ class Constraints:
                 s.add(constraints)
                 s.add(env[file] == 1)
                 for other in filter(lambda n: n != file, files):
-                    s.add(env[other] == 0)
+                    s.add(env[other] != 1)
                 s.check()
                 m = s.model()
+                print(m)
 
                 defines = []
                 for var in m:
