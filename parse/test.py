@@ -134,22 +134,22 @@ for arch in archlist:
                             defs.append(f"-D {key}={val}")
                     defs = " ".join(defs)
 
-                    # with open(cache / version / "json" / f"{arch}-{instr.abi}.json", "w+") as output:
-                    #     parsed = jsonify(includepath, defs)
-                    #     syscalls = []
-                    #     for syscall, nr in sorted(parsed.items(), key = lambda entry: entry[1]):
-                    #         syscalls.append({
-                    #             "nr": nr,
-                    #             "name": syscall,
-                    #             "args": [],
-                    #             "path": "tbd",
-                    #         })
-                    #     output.write(json.dumps({
-                    #         "syscalls": syscalls,
-                    #     }))
+                    with open(cache / version / "json" / f"{arch}-{instr.abi}.json", "w+") as output:
+                        parsed = jsonify(includepath, defs)
+                        syscalls = []
+                        for syscall, nr in sorted(parsed.items(), key = lambda entry: entry[1]):
+                            syscalls.append({
+                                "nr": nr,
+                                "name": syscall,
+                                "args": [],
+                                "path": "tbd",
+                            })
+                        output.write(json.dumps({
+                            "syscalls": syscalls,
+                        }))
                     arches.setdefault(arch, []).append(instr.abi)
 
-    print(f"===[ {arch} ]===")
+    print(f"finished parsing {arch}")
     process(instrs)
 
 with open("static/json/info.json", "w+") as info:
