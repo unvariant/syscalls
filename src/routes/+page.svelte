@@ -5,7 +5,7 @@
 	import { FaceFrown, Icon } from 'svelte-hero-icons';
 	let swapNumberFormat = false;
 	export let data: PageData;
-	let registers = ['rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9'];
+	// let registers = ['rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9'];
 	// return a nice looking message when no keys are found
 	$: fuse = new Fuse(data.syscalls, { keys: ['name', 'nr', 'args'], threshold: 0.3 });
 	const padArrayRight = <T>(array: T[], length: number, fillWith: T) =>
@@ -34,9 +34,9 @@
 				<tr>
 					<th>nr</th>
 					<th>name</th>
-					{#each registers as r}
+					<!-- {#each registers as r}
 						<th>{r}</th>
-					{/each}
+					{/each} -->
 				</tr>
 			</thead>
 			<tbody class="border border-white">
@@ -48,7 +48,7 @@
 							{nr > 1023 !== swapNumberFormat ? '0x' + nr.toString(16) : nr}
 						</td>
 						<td class="px-3 py-2 border dark:border-neutral-800 border-slate-100">{name}</td>
-						{#each padArrayRight(args, 6, ['', '']) as [type, name]}
+						{#each padArrayRight(args, 0, ['', '']) as [type, name]}
 							<td
 								class="px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100 whitespace-nowrap"
 							>
