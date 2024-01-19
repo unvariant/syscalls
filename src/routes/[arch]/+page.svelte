@@ -10,12 +10,12 @@
 	// return a nice looking message when no keys are found
 	$: fuse = new Fuse<Syscall>(data.syscalls, {
 		keys: [
-			{ name: 'name', weight: 0.5 },
+			{ name: 'name', weight: 0.6 },
 			{ name: 'nr', weight: 0.01 },
 			{
 				name: 'args',
 				getFn: (syscall) => syscall.args.map((arg: Arg) => `${arg.fulltype} ${arg.name}`),
-				weight: 0.5
+				weight: 0.4
 			},
 			{ name: 'path', weight: 0.01 },
 			{ name: 'line', weight: 0.01 }
