@@ -106,7 +106,8 @@ def arch_specific_load(arch: str):
         path = str(Path(entry["path"]["text"]).relative_to(linux))
         line = int(entry["line_number"])
 
-        syscalls["normal"][name] = { "name": name, "args": args, "path": path, "line": line, }
+        if not name in syscalls["normal"]:
+            syscalls["normal"][name] = { "name": name, "args": args, "path": path, "line": line, }
 
     return syscalls
 
@@ -217,7 +218,7 @@ def make_searchable(args: list[Tuple[str, str]]):
         fulltype = re.sub(r"\*\s+\*", "**", fulltype)
         fulltype = fulltype.strip()
 
-        if " " not in fulltype:
+        if not " " in fulltype:
             results.append({ "fulltype": fulltype, "search": search, "name": name })
             continue
 

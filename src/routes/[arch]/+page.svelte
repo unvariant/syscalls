@@ -68,7 +68,7 @@
 						</td>
 						{#each padArrayRight( args, 6, { fulltype: '', search: '', name: ''} ) as { fulltype, search, name}}
 							<td
-								class="px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100 whitespace-nowrap"
+								class="px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100"
 							>
 								<a
 									href="https://elixir.bootlin.com/linux/v6.5-rc6/C/ident/{search}"
