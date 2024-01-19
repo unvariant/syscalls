@@ -26,6 +26,17 @@
 		elements: { trigger, overlay, content, title, description, close, portalled },
 		states: { open }
 	} = createDialog();
+
+	let timer: NodeJS.Timeout;
+
+	const debounce = (v: string) => {
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			$searchTerm = v;
+		}, 250);
+	};
+
+	const searchOnKeyup = ({ target: { value } }: { target: { value: string } }) => debounce(value);
 </script>
 
 <svelte:body use:bindBody />
@@ -68,7 +79,7 @@
 					</label>
 					<div class="grid justify-start w-full grid-cols-1 align-center">
 						<input
-							bind:value={$searchTerm}
+							on:keyup={searchOnKeyup}
 							type="search"
 							id="search"
 							class="w-full h-10 col-start-1 row-start-1 px-3 py-2 pl-8 bg-white border rounded-md text-slate-700 dark:bg-black dark:text-slate-300 border-slate-300 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -124,7 +135,8 @@
 					<a
 						href="https://github.com/les-amateurs/syscalls"
 						target="_blank"
-						class="text-blue-500 underline dark:text-blue-300">
+						class="text-blue-500 underline dark:text-blue-300"
+					>
 						Source Code
 					</a>
 					<button
