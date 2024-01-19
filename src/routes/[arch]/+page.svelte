@@ -3,22 +3,22 @@
 	import searchTerm from '$lib/search';
 	import Fuse from 'fuse.js';
 	import { FaceFrown, Icon } from 'svelte-hero-icons';
+	import type { Arg, Syscall } from '$lib';
 	let swapNumberFormat = false;
 	export let data: PageData;
 	let registers = ['rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9'];
 	// return a nice looking message when no keys are found
-	$: fuse = new Fuse(data.syscalls, {
+	$: fuse = new Fuse<Syscall>(data.syscalls, {
 		keys: [
 			{ name: 'name', weight: 0.5 },
-			{ name: 'nr', weight: 0.01, },
+			{ name: 'nr', weight: 0.01 },
 			{
 				name: 'args',
-				getFn: (syscall) =>
-					(syscall as any).args.map((arg: { fulltype: string; search: string, name: string }) => `${arg.fulltype} ${arg.name}`),
-				weight: 0.5,
+				getFn: (syscall) => syscall.args.map((arg: Arg) => `${arg.fulltype} ${arg.name}`),
+				weight: 0.5
 			},
-			{ name: 'path', weight: 0.01, },
-			{ name: 'line', weight: 0.01, },
+			{ name: 'path', weight: 0.01 },
+			{ name: 'line', weight: 0.01 }
 		],
 		threshold: 0.3
 	});
@@ -36,7 +36,7 @@
 	}}
 />
 
-<div class="h-full overflow-x-scroll">
+<div class="h-full overflow-x-auto">
 	{#if searchResults.length !== 0}
 		<table class="min-w-full border-collapse rounded-md table-auto">
 			<thead class="sticky top-0 left-0 z-10 h-12 text-lg bg-slate-100 dark:bg-neutral-900">
@@ -56,7 +56,7 @@
 						>
 							{nr > 1023 !== swapNumberFormat ? '0x' + nr.toString(16) : nr}
 						</td>
-						<td class="px-3 py-2 border dark:border-neutral-800 border-slate-100">
+						<td class="min-w-0 px-3 py-2 border dark:border-neutral-800 border-slate-100 whitespace-nowrap">
 							{#if path != 'undetermined'}
 								<a
 									href="https://elixir.bootlin.com/linux/v6.5-rc6/source/{path}#L{line}"
@@ -66,15 +66,13 @@
 								{name}
 							{/if}
 						</td>
-						{#each padArrayRight( args, 6, { fulltype: '', search: '', name: ''} ) as { fulltype, search, name}}
-							<td
-								class="px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100"
-							>
+						{#each padArrayRight( args, 6, { fulltype: '', search: '', name: '' } ) as { fulltype, search, name }}
+							<td class="min-w-0 px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100 whitespace-nowrap">
 								<a
 									href="https://elixir.bootlin.com/linux/v6.5-rc6/C/ident/{search}"
 									target="_blank"
 								>
-									<span class="font-semibold">{fulltype}</span>
+									<span class="font-semibold">{fulltype}</span><br />
 									<span class="text-slate-500 dark:text-neutral-400">{name}</span>
 								</a>
 							</td>
