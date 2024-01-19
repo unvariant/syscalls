@@ -220,6 +220,7 @@ def make_searchable(args: list[Tuple[str, str]]):
         fulltype = fulltype.replace("__old_kernel_", "old_")
         fulltype = fulltype.replace("__kernel_", "")
         fulltype = fulltype.replace("__user", "")
+        fulltype = fulltype.replace("compat_", "")
         fulltype = fulltype.replace("__", "")
         
         pointers = re.compile(r"\*\s+\*")

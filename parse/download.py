@@ -28,12 +28,14 @@ static = Path(args.static)
 static.mkdir(exist_ok=True)
 cache = Path("cache")
 cache.mkdir(exist_ok=True)
-json_dir = cache / args.tag / "json"
+bucket = cache / args.tag
+bucket.mkdir(exist_ok=True)
+json_dir = bucket / "json"
 json_dir.mkdir(exist_ok=True)
-linux = cache / args.tag / "linux"
+linux = bucket / "linux"
 
 def install(arch: str):
-    headers = cache / args.tag / "headers" / arch
+    headers = bucket / "headers" / arch
     if not headers.exists():
         subprocess.run(f"make defconfig ARCH='{arch}'", shell=True, cwd=linux, check=True)
         subprocess.run(f"make headers_install INSTALL_HDR_PATH='{headers.absolute()}' ARCH='{arch}'", shell=True, cwd=linux, check=True)
