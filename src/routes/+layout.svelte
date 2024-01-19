@@ -138,7 +138,7 @@
 			{/if}
 		</div>
 	</header>
-	<main class="flex-1 overflow-y-scroll">
+	<main class="flex-1 overflow-hidden">
 		<slot />
 	</main>
 	<div class="flex-grow-0" />
