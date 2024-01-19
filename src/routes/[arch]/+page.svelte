@@ -7,7 +7,20 @@
 	export let data: PageData;
 	let registers = ['rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9'];
 	// return a nice looking message when no keys are found
-	$: fuse = new Fuse(data.syscalls, { keys: ['name', 'nr', 'args', 'path', 'line'], threshold: 0.3 });
+	$: fuse = new Fuse(data.syscalls, {
+		keys: [
+			'name',
+			'nr',
+			{
+				name: 'args',
+				getFn: (syscall) =>
+					(syscall as any).args.map((arg: { fulltype: string; search: string, name: string }) => arg.fulltype)
+			},
+			'path',
+			'line'
+		],
+		threshold: 0.3
+	});
 	const padArrayRight = <T>(array: T[], length: number, fillWith: T) =>
 		array.concat(new Array(length).fill(fillWith)).slice(0, length);
 
@@ -43,17 +56,23 @@
 							{nr > 1023 !== swapNumberFormat ? '0x' + nr.toString(16) : nr}
 						</td>
 						<td class="px-3 py-2 border dark:border-neutral-800 border-slate-100">
-							{#if path != "undetermined" }
-								<a href="https://elixir.bootlin.com/linux/v6.5-rc6/source/{ path }#L{line}" target="_blank">{name}</a>
+							{#if path != 'undetermined'}
+								<a
+									href="https://elixir.bootlin.com/linux/v6.5-rc6/source/{path}#L{line}"
+									target="_blank">{name}</a
+								>
 							{:else}
 								{name}
 							{/if}
 						</td>
-						{#each padArrayRight(args, 6, [{ fulltype: "", search: "",}, ""]) as [{ fulltype, search }, name]}
+						{#each padArrayRight( args, 6, [{ fulltype: '', search: '' }, ''] ) as [{ fulltype, search }, name]}
 							<td
 								class="px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100 whitespace-nowrap"
 							>
-								<a href="https://elixir.bootlin.com/linux/v6.5-rc6/C/ident/{ search }" target="_blank">
+								<a
+									href="https://elixir.bootlin.com/linux/v6.5-rc6/C/ident/{search}"
+									target="_blank"
+								>
 									<span class="font-semibold">{fulltype}</span>
 									<span class="text-slate-500 dark:text-neutral-400">{name}</span>
 								</a>
@@ -66,7 +85,9 @@
 	{:else}
 		<div class="flex items-center justify-center h-full">
 			<div class="m-auto">
-				<p class="text-xl font-semibold text-center text-slate-500 dark:text-neutral-400">No Results Found</p>
+				<p class="text-xl font-semibold text-center text-slate-500 dark:text-neutral-400">
+					No Results Found
+				</p>
 				<Icon src={FaceFrown} class="w-64 h-64 m-auto text-slate-400 dark:text-neutral-500" />
 			</div>
 		</div>

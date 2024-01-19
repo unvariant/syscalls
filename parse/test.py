@@ -10,7 +10,6 @@ import subprocess
 import tempfile
 import json
 from multiprocessing import Pool
-from mytypes import *
 from v2 import *
 
 logging.basicConfig(level=logging.INFO)
@@ -219,10 +218,7 @@ def make_searchable(args: list[Tuple[str, str]]):
         fulltype = fulltype.strip()
 
         if " " not in fulltype:
-            results.append((
-                { "fulltype": fulltype, "search": search, },
-                name,
-            ))
+            results.append({ "fulltype": fulltype, "search": search, "name": name })
             continue
 
         while True:
@@ -236,10 +232,7 @@ def make_searchable(args: list[Tuple[str, str]]):
         if " " in search:
             logging.info(f"search: `{search}`")
         
-        results.append((
-            { "fulltype": fulltype, "search": search, },
-            name,
-        ))
+        results.append({ "fulltype": fulltype, "search": search, "name": name })
     return results
     
 def process(arch: str, instrs: list[Instr], arch_syscalls: dict[str, dict], includepath: Path, conditions: list[str], defines: list[Instr], abi: list[str]):
