@@ -6,7 +6,6 @@
 	let swapNumberFormat = false;
 	export let data: PageData;
 	let registers = ['rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9'];
-	// return a nice looking message when no keys are found
 	$: fuse = new Fuse(data.syscalls, { keys: ['name', 'nr', 'args'], threshold: 0.3 });
 	const padArrayRight = <T>(array: T[], length: number, fillWith: T) =>
 		array.concat(new Array(length).fill(fillWith)).slice(0, length);

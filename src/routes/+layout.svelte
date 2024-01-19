@@ -22,8 +22,6 @@
 		v5: ['latest']
 	};
 
-	const arche = data.arches;
-
 	const {
 		elements: { trigger, overlay, content, title, description, close, portalled },
 		states: { open }
@@ -132,7 +130,7 @@
 			{/if}
 		</div>
 	</header>
-	<main class="flex-1 overflow-y-scroll">
+	<main class="flex-1 overflow-hidden">
 		<slot />
 	</main>
 	<div class="flex-grow-0" />
