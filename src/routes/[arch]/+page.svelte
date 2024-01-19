@@ -9,15 +9,16 @@
 	// return a nice looking message when no keys are found
 	$: fuse = new Fuse(data.syscalls, {
 		keys: [
-			'name',
-			'nr',
+			{ name: 'name', weight: 0.5 },
+			{ name: 'nr', weight: 0.01, },
 			{
 				name: 'args',
 				getFn: (syscall) =>
-					(syscall as any).args.map((arg: { fulltype: string; search: string, name: string }) => arg.fulltype)
+					(syscall as any).args.map((arg: { fulltype: string; search: string, name: string }) => `${arg.fulltype} ${arg.name}`),
+				weight: 0.5,
 			},
-			'path',
-			'line'
+			{ name: 'path', weight: 0.01, },
+			{ name: 'line', weight: 0.01, },
 		],
 		threshold: 0.3
 	});
@@ -65,7 +66,7 @@
 								{name}
 							{/if}
 						</td>
-						{#each padArrayRight( args, 6, [{ fulltype: '', search: '' }, ''] ) as [{ fulltype, search }, name]}
+						{#each padArrayRight( args, 6, { fulltype: '', search: '', name: ''} ) as { fulltype, search, name}}
 							<td
 								class="px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100 whitespace-nowrap"
 							>
