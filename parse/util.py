@@ -1,5 +1,13 @@
 from pathlib import Path
-from typing import Tuple
+from typing import *
+import subprocess
+
+def run(cmd):
+    return subprocess.run(cmd, shell=True, capture_output=True, encoding="utf-8")
+
+def grouppairs(iterable: Iterable):
+    a = iter(iterable)
+    return zip(a, a)
 
 def parse_directive(line: str) -> Tuple[str, str]:
     assert line.startswith("#"), "directive does not start with `#`"
