@@ -221,7 +221,12 @@ def make_searchable(args: list[Tuple[str, str]]):
         fulltype = fulltype.replace("__kernel_", "")
         fulltype = fulltype.replace("__user", "")
         fulltype = fulltype.replace("__", "")
-        fulltype = re.sub(r"\*\s+\*", "**", fulltype)
+        
+        pointers = re.compile(r"\*\s+\*")
+        while re.search(pointers, fulltype):
+            fulltype = pointers.sub("**", fulltype)
+
+        fulltype = re.sub(r"\s+(\*+)\s*", r" \1", fulltype)
         fulltype = fulltype.strip()
 
         if not " " in fulltype:

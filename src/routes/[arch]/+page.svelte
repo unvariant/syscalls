@@ -24,6 +24,26 @@
 	});
 	const padArrayRight = <T>(array: T[], length: number, fillWith: T) =>
 		array.concat(new Array(length).fill(fillWith)).slice(0, length);
+	const modifiers = ["struct", "union", "enum", "unsigned"];
+	const splitType = (type: string) => {
+		let last2 = "";
+		let rest = type;
+		let modifier = "";
+		if (rest.endsWith("*")) {
+			last2 = rest.split(' ').splice(-2).join(' ');
+			rest = rest.slice(0, rest.length - last2.length);
+		}
+
+		for (const mod of modifiers) {
+			if (rest.startsWith(`${mod} `)) {
+				modifier = `${mod} `;
+				rest = rest.slice(modifier.length);
+				break;
+			}
+		}
+
+		return { modifier, rest, last2 };
+	};
 
 	$: searchResults = $searchTerm ? fuse.search($searchTerm).map((x) => x.item) : data.syscalls;
 </script>
@@ -67,6 +87,7 @@
 							{/if}
 						</td>
 						{#each padArrayRight( args, 6, { fulltype: '', search: '', name: ''} ) as { fulltype, search, name}}
+							{@const { modifier, rest, last2 } = splitType(fulltype) }
 							<td
 								class="px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100"
 							>
@@ -74,8 +95,11 @@
 									href="https://elixir.bootlin.com/linux/v6.5-rc6/C/ident/{search}"
 									target="_blank"
 								>
-									<span class="font-semibold">{fulltype}</span>
-									<span class="text-slate-500 dark:text-neutral-400">{name}</span>
+									<span class="font-semibold dark:text-neutral-200 text-xs">{ modifier }</span>
+									<span class="font-semibold">{ rest }</span>
+									<span class="font-semibold whitespace-nowrap">{ last2 }</span>
+									<br>
+									<span class="text-slate-500 dark:text-neutral-400 block">{name}</span>
 								</a>
 							</td>
 						{/each}
