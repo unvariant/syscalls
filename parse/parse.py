@@ -23,11 +23,13 @@ parser.add_argument("-j", help="number of processes", default=4, type=int)
 
 args = parser.parse_args()
 processes = args.j
-cache = Path("cache")
 version = args.tag
+cache = Path("cache")
+static = Path("static")
+json_dir = static / version
 
 linux = cache / version / "linux"
-with open(Path(cache / version / "json" / "archlist.json"), "r") as f:
+with open(Path(json_dir / "archlist.json"), "r") as f:
     archlist = json.load(f)
 arch_specific: dict[str, dict] = {}
 arch_generic: dict[str, dict] = { "normal": {}, "compat": {}, }
@@ -36,7 +38,7 @@ signatures: dict[str, list[Tuple[str, str]]] = {}
 
 def load_signatures(signatures: dict[str, list[Tuple[str, str]]]):
     signatures_file = linux / "include" / "linux" / "syscalls.h"
-    signatures_cache = cache / version / "json" / "signatures.json"
+    signatures_cache = json_dir / "signatures.json"
     if signatures_cache.exists():
         with open(signatures_cache, "r") as f:
             signatures.update(json.load(f))
@@ -122,7 +124,7 @@ def arch_generic_load(path: str):
     return parse_syscalls(tags.stdout)
 
 def load_syscalls(specific: dict, generic: dict):
-    generic_cache = cache / version / "json" / "generic.json"
+    generic_cache = json_dir / "generic.json"
 
     if generic_cache.exists():
         with open(generic_cache, "r") as f:
@@ -141,7 +143,7 @@ def load_syscalls(specific: dict, generic: dict):
         with open(generic_cache, "w+") as f:
             f.write(json.dumps(generic))
 
-    specific_cache = cache / version / "json" / "specific.json"
+    specific_cache = json_dir / "specific.json"
 
     if specific_cache.exists():
         with open(specific_cache, "r") as f:
@@ -299,7 +301,7 @@ def process(arch: str, instrs: list[Instr], arch_syscalls: dict[str, dict], incl
                         defs.append(f"-D {key}={val}")
                 defs = " ".join(defs)
 
-                with open(cache / version / "json" / f"{arch}-{instr.abi}.json", "w+") as output:
+                with open(json_dir / f"{arch}-{instr.abi}.json", "w+") as output:
                     # table_abi = "" if instr.abi == "generic" else instr.abi
                     # table = (linux / "arch" / arch).glob(f"**/syscall*{table_abi}*.tbl")
                     # print(list(table))
@@ -350,7 +352,7 @@ archinfo = {}
 for arch, abilist in zip(archlist, results):
     archinfo[arch] = abilist
 
-with open(cache / version / "json" / "info.json", "w+") as info:
+with open(json_dir / "info.json", "w+") as info:
     for v in archinfo.values():
         v.sort()
     info.write(json.dumps(archinfo))

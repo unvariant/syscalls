@@ -24,20 +24,22 @@ parser.add_argument("-j", help="number of processes", default=4, type=int)
 
 args = parser.parse_args()
 processes = args.j
+version = args.tag
 static = Path(args.static)
 static.mkdir(exist_ok=True)
 cache = Path("cache")
 cache.mkdir(exist_ok=True)
-bucket = cache / args.tag
+bucket = cache / version
 bucket.mkdir(exist_ok=True)
-json_dir = bucket / "json"
+json_dir = static / version
 json_dir.mkdir(exist_ok=True)
 linux = bucket / "linux"
+version_file = static / "versions.json"
+archlist_cache = json_dir / "archlist.json"
 
 def install(arch: str):
     headers = bucket / "headers" / arch
     if not headers.exists():
-        subprocess.run(f"make defconfig ARCH='{arch}'", shell=True, cwd=linux, check=True)
         subprocess.run(f"make headers_install INSTALL_HDR_PATH='{headers.absolute()}' ARCH='{arch}'", shell=True, cwd=linux, check=True)
     else:
         logging.warning(f"{headers} already exists, not installing")
@@ -47,10 +49,15 @@ if not linux.exists():
 else:
     logging.warning(f"{cache} already exists, not downloading")
 
-archlist = Path(linux / "arch").glob("*/")
-archlist = [path.stem for path in archlist]
+if archlist_cache.exists():
+    with open(archlist_cache, "r") as f:
+        archlist = json.load(f)
+else:
+    archlist = Path(linux / "arch").glob("*/")
+    archlist = [path.stem for path in archlist]
 
 working = []
+subprocess.run(f"make tinyconfig", shell=True, cwd=linux, check=True)
 
 for arch in archlist:
     try:
@@ -59,5 +66,16 @@ for arch in archlist:
     except subprocess.CalledProcessError as e:
         logging.warning(f"failed to build headers for {arch}")
 
-with open(json_dir / "archlist.json", "w+") as f:
+with open(archlist_cache, "w+") as f:
     f.write(json.dumps(working))
+
+if version_file.exists():
+    with open(static / "versions.json", "r") as f:
+        versions = set(json.load(f))
+else:
+    versions = set()
+
+versions.add(version)
+
+with open(static / "versions.json", "w+") as f:
+    f.write(json.dumps(list(versions)))

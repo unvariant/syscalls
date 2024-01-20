@@ -79,7 +79,7 @@
 						<td class="min-w-0 px-3 py-2 border dark:border-neutral-800 border-slate-100 whitespace-nowrap">
 							{#if path != 'undetermined'}
 								<a
-									href="https://elixir.bootlin.com/linux/v6.5-rc6/source/{path}#L{line}"
+									href="https://elixir.bootlin.com/linux/{ data.version }/source/{ path }#L{ line }"
 									target="_blank">{name}</a
 								>
 							{:else}
@@ -92,7 +92,7 @@
 								class="min-w-0 px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100"
 							>
 								<a
-									href="https://elixir.bootlin.com/linux/v6.5-rc6/C/ident/{search}"
+									href="https://elixir.bootlin.com/linux/{ data.version }/C/ident/{ search }"
 									target="_blank"
 								>
 									<span class="font-semibold dark:text-neutral-200 text-xs">{ modifier }</span>

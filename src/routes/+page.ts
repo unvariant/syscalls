@@ -1,7 +1,11 @@
+import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 export const prerender = true;
 
-export const load: PageLoad = async ({ fetch }) => {
-	const res = await fetch('/json/x86-64.json');
-	return await res.json();
+export const load: PageLoad = async ({ fetch, params }) => {
+  const res = await fetch(`/v5.0/x86-64.json`);
+  if (res.status !== 200) throw error(404, "Not found") ;
+  const result = await res.json();
+  result.version = "v5.0";
+  return result;
 };
