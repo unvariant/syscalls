@@ -71,6 +71,10 @@ def parse_syscalls(tags: str):
             if tag["name"].startswith("SYSCALL_DEFINE"):
                 syscall, *args = tag["signature"][1:-1].split(",")
                 args = list(grouppairs(args))
+
+                if syscall in syscalls["normal"]:
+                    logging.warn(f"{syscall} already found")
+
                 syscalls["normal"][syscall] = { "name": syscall, "args": args, "path": str(Path(tag["path"]).relative_to(linux)), "line": int(tag["line"]), }
             elif tag["name"].startswith("COMPAT_SYSCALL_DEFINE"):
                 syscall, *args = tag["signature"][1:-1].split(",")
@@ -78,6 +82,10 @@ def parse_syscalls(tags: str):
                 syscalls["compat"][syscall] = { "name": syscall, "args": args, "path": str(Path(tag["path"]).relative_to(linux)), "line": int(tag["line"]), }
             elif tag["name"].startswith("sys_"):
                 syscall = tag["name"][4:]
+
+                if syscall in syscalls["normal"]:
+                    logging.warn(f"{syscall} already found")
+
                 if not syscall in syscalls["normal"]:
                     args = tag["signature"][1:-1].split(",")
                     args = map(lambda arg: tuple(arg.rsplit(" ", 1)) if " " in arg else (arg, ""), args)
@@ -89,6 +97,10 @@ def parse_syscalls(tags: str):
                     syscall = syscall[4:]
                 logging.debug(f"name: {syscall}")
                 args = signatures.get(syscall, [["?", ""]])
+
+                if syscall in syscalls["normal"]:
+                    logging.warn(f"{syscall} already found")
+                    
                 syscalls["normal"][syscall] = { "name": syscall, "args": args, "path": str(Path(tag["path"]).relative_to(linux)), "line": int(tag["line"]), }
 
     return syscalls

@@ -98,7 +98,6 @@
 									href="https://elixir.bootlin.com/linux/{ data.version }/C/ident/{ search }"
 									target="_blank"
 								>
-									<dialog></dialog>
 									<span class="font-semibold dark:text-neutral-200 text-xs">{ modifier }</span>
 									<span class="font-semibold">{ rest }</span>
 									<span class="font-semibold whitespace-nowrap">{ last2 }</span>
