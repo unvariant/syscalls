@@ -4,9 +4,8 @@
 	import { createDialog, createLabel, melt } from '@melt-ui/svelte';
 	import searchTerm from '$lib/search';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { Icon, InformationCircle, MagnifyingGlass, Moon, Sun, XMark } from 'svelte-hero-icons';
-	import { fade } from 'svelte/transition';
+	import { fade, fly } from 'svelte/transition';
 	let body: HTMLBodyElement | null;
 	let darkMode = true;
 	export let data;
@@ -100,13 +99,21 @@
 		</nav>
 		<div use:melt={$portalled}>
 			{#if $open}
-				<div use:melt={$overlay} class="fixed inset-0 z-50 bg-black/20 dark:bg-white/20" />
+				<div
+					use:melt={$overlay}
+					class="fixed inset-0 z-50 bg-black/20"
+					transition:fade={{
+						duration: 150
+					}}
+				/>
 				<div
 					class="fixed left-[50%] top-[50%] z-50 max-h-[85vh] w-[90vw]
             max-w-[450px] translate-x-[-50%] translate-y-[-50%] rounded-lg bg-white dark:bg-black
             p-6"
-					transition:fade={{
-						duration: 150
+					transition:fly={{
+						duration: 300,
+						y: 10,
+						opacity: 0
 					}}
 					use:melt={$content}
 				>
