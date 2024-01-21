@@ -58,7 +58,7 @@
 	}}
 />
 
-<div class="h-full overflow-x-auto">
+<div class="h-full overflow-x-auto fancy-scroll">
 	{#if searchResults.length !== 0}
 		<table class="min-w-full border-collapse rounded-md table-auto">
 			<thead class="sticky top-0 left-0 z-10 h-12 text-lg bg-slate-100 dark:bg-neutral-900">
@@ -82,7 +82,7 @@
 						<td
 							class="min-w-0 px-3 py-2 border dark:border-neutral-800 border-slate-100 whitespace-nowrap"
 						>
-							<SyscallDialog {syscall} version={data.version}/>
+							<SyscallDialog {syscall} version={data.version} />
 						</td>
 						{#each padArrayRight( args, 6, { fulltype: '', search: '', name: '' } ) as { fulltype, search, name }}
 							{@const { modifier, rest, last2 } = splitType(fulltype)}
@@ -116,3 +116,35 @@
 		</div>
 	{/if}
 </div>
+
+<style lang="postcss">
+	/* .fancy-scroll {
+		scrollbar-color: theme(colors.slate.800) theme(colors.slate.100);
+		scrollbar-width: thin;
+	} */
+
+	.fancy-scroll::-webkit-scrollbar {
+		width: 0.5rem;
+		height: 0.5rem;
+	}
+	.fancy-scroll::-webkit-scrollbar-track {
+		background-color: theme(colors.slate.100);
+	}
+
+	.fancy-scroll::-webkit-scrollbar-thumb {
+		background-color: theme(colors.slate.300);
+		@apply rounded-md;
+	}
+	.fancy-scroll::-webkit-scrollbar-button {
+		display: none;
+	}
+
+	:is(.dark .fancy-scroll)::-webkit-scrollbar-track {
+		background-color: theme(colors.neutral.900);
+	}
+
+	:is(.dark .fancy-scroll)::-webkit-scrollbar-thumb {
+		background-color: theme(colors.neutral.600);
+		@apply rounded-md;
+	}
+</style>

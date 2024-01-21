@@ -19,7 +19,7 @@
 	{#if $open}
 		<div
 			use:melt={$overlay}
-			class="fixed inset-0 z-50 bg-black/20"
+			class="fixed inset-0 z-50 bg-black/20 dark:bg-white/10"
 			transition:fade={{
 				duration: 150
 			}}
@@ -28,7 +28,7 @@
 			use:melt={$content}
 			class="fixed left-[50%] top-[50%] z-50 max-h-[85vh] w-[90vw]
             max-w-[450px] translate-x-[-50%] translate-y-[-50%] rounded-lg bg-white dark:bg-black
-            p-6 dark:text-white"
+            p-6 dark:text-white border dark:border-neutral-800 border-slate-100"
 			transition:fly={{
 				duration: 300,
 				y: 10,
