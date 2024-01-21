@@ -52,6 +52,7 @@
 	on:keyup={(e) => {
 		if (e.key === 'H' && e.shiftKey) {
 			swapNumberFormat = !swapNumberFormat;
+			e.preventDefault();
 		}
 	}}
 />
@@ -80,8 +81,10 @@
 							{#if path != 'undetermined'}
 								<a
 									href="https://elixir.bootlin.com/linux/{ data.version }/source/{ path }#L{ line }"
-									target="_blank">{name}</a
+									target="_blank"
 								>
+									{name}
+								</a>
 							{:else}
 								{name}
 							{/if}
@@ -95,6 +98,7 @@
 									href="https://elixir.bootlin.com/linux/{ data.version }/C/ident/{ search }"
 									target="_blank"
 								>
+									<dialog></dialog>
 									<span class="font-semibold dark:text-neutral-200 text-xs">{ modifier }</span>
 									<span class="font-semibold">{ rest }</span>
 									<span class="font-semibold whitespace-nowrap">{ last2 }</span>

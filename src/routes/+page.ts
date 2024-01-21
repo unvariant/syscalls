@@ -3,9 +3,15 @@ import type { PageLoad } from './$types';
 export const prerender = true;
 
 export const load: PageLoad = async ({ fetch, params }) => {
-  const res = await fetch(`/v5.0/x86-64.json`);
+	const ver = await fetch(`/versions.json`);
+	const versions = await ver.json();
+	const latest = Object.values(versions)[0][0];
+  const arch = "x86-64";
+
+  const res = await fetch(`/${latest}/${arch}.json`);
   if (res.status !== 200) throw error(404, "Not found") ;
   const result = await res.json();
-  result.version = "v5.0";
+  result.version = latest;
+  result.arch = arch;
   return result;
 };

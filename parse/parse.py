@@ -10,6 +10,7 @@ import json
 from multiprocessing import Pool
 from v2 import *
 import argparse
+import mapping
 
 logging.basicConfig(level=logging.INFO)
 
@@ -159,12 +160,6 @@ def load_syscalls(specific: dict, generic: dict):
             f.write(json.dumps(specific))
 
 def jsonify(includepath: Path, defs: str):
-    # predefines = run("gcc -x c /dev/null -dM -E", shell=True, capture_output=True, encoding="ascii").stdout.strip().split("\n")
-    # predefines = map(lambda define: define.split()[1], predefines)
-    # predefines = map(lambda define: define[:define.find("(")] if "(" in define else define, predefines)
-    # predefines = map(lambda define: f"-U {define}", predefines)
-    # predefines = " ".join(predefines)
-
     unistd = includepath / "asm" / "unistd.h"
 
     output = run(f"zig translate-c {defs} -I {includepath} {unistd}").stdout.strip().split("\n")
@@ -237,10 +232,12 @@ def make_searchable(args: list[Tuple[str, str]]):
             continue
 
         while True:
-            if search.startswith("const ") or search.startswith("struct "):
+            if search.startswith("const "):
                 search = search[6:].strip()
             elif search.endswith("const"):
                 search = search[:-5].strip()
+            elif "struct " in search:
+                search = search[search.index("struct ")+7:]
             else:
                 break
 
@@ -249,108 +246,86 @@ def make_searchable(args: list[Tuple[str, str]]):
         
         results.append({ "fulltype": fulltype, "search": search, "name": name })
     return results
+
+class ProcessArgs:
+    def __init__(self, arch: str, abi: str, defs: str):
+        self.arch = arch
+        self.abi = abi
+        self.defs = defs
     
-def process(arch: str, instrs: list[Instr], arch_syscalls: dict[str, dict], includepath: Path, conditions: list[str], defines: list[Instr], abi: list[str]):
-    for instr in instrs:
-        match instr.type():
-            case Instr.DEFINE:
-                defines.append(instr)
-
-            case Instr.BRANCH:
-                for condition, body in instr.map.items():
-                    cutoff = len(defines)
-                    conditions.append(condition)
-                    process(arch, body, arch_syscalls, includepath, conditions=conditions, defines=defines, abi=abi)
-                    conditions.pop()
-                    defines = defines[:cutoff]
-
-            case Instr.INCLUDE:
-                s = Solver()
-                decls = {}
-                decls["s"] = s
-                decls["defined"] = lambda x: x != 0
-                decls["flip"] = lambda x: x == False
-
-                for define in defines:
-                    decls[define.key] = Int(define.key)
-                    try:
-                        eval(f"s.add({define.key} == {define.value})", {}, decls)
-                    except NameError as e:
-                        decls[e.name] = Int(e.name)
-
-                important = []
-                for cond in conditions:
-                    while True:
-                        try:
-                            eval(cond.condition, {}, decls)
-                            break
-                        except NameError as e:
-                            decls[e.name] = Int(e.name)
-                            important.append(e.name)
-
-                    eval(f"s.add(({cond.condition}))", {}, decls)
-                
-                status = s.check()
-                logging.info(f"arch: {arch}, abi: {instr.abi}, status: {status}")
-                m = s.model()
-                defs = []
-                for name in important:
-                    key = decls[name]
-                    val = m[key].as_long()
-                    if val:
-                        defs.append(f"-D {key}={val}")
-                defs = " ".join(defs)
-
-                with open(json_dir / f"{arch}-{instr.abi}.json", "w+") as output:
-                    # table_abi = "" if instr.abi == "generic" else instr.abi
-                    # table = (linux / "arch" / arch).glob(f"**/syscall*{table_abi}*.tbl")
-                    # print(list(table))
-                    parsed = jsonify(includepath, defs)
-                    syscalls = []
-                    for syscall, nr in sorted(parsed.items(), key = lambda entry: entry[1]):
-                        info = \
-                            arch_syscalls["normal"].get(syscall, None) or \
-                            arch_generic["normal"].get(syscall, None) or \
-                            arch_syscalls["compat"].get(syscall, None) or \
-                            arch_generic["compat"].get(syscall, None) or \
-                            { "args": signatures.get(syscall, [["?", ""]]), "path": "undetermined", "line": "undetermined", }
-
-                        syscalls.append({
-                            "nr": nr,
-                            "name": syscall,
-                            "args": make_searchable(info["args"]),
-                            "path": info["path"],
-                            "line": info["line"],
-                        })
-                    output.write(json.dumps({
-                        "syscalls": syscalls,
-                    }))
-
-                abi.append(instr.abi)
-    
-    return abi
-
-def trampoline(arch: str):
+def process(args: ProcessArgs):
+    arch = args.arch
+    abi = args.abi
+    defs = args.defs
+    includepath = cache / version / "headers" / arch / "include"
     arch_syscalls = arch_specific[arch]
-    includepath = Path(cache / version / "headers" / arch / "include")
-    unistd = includepath / "asm" / "unistd.h"
-    if not unistd.exists():
-        return []
+    defs = map(lambda define: f"-D {define}", defs)
+    defs = " ".join(defs)
 
-    data = prepare(unistd)
-    p = Parser(data, includepath=includepath.absolute())
+    logging.info(f"processing {arch}-{abi}")
+    
+    with open(json_dir / f"{arch}-{abi}.json", "w+") as output:
+        parsed = jsonify(includepath, defs)
+        syscalls = []
+        for syscall, nr in sorted(parsed.items(), key = lambda entry: entry[1]):
+            info = \
+                arch_syscalls["normal"].get(syscall, None) or \
+                arch_generic["normal"].get(syscall, None) or \
+                arch_syscalls["compat"].get(syscall, None) or \
+                arch_generic["compat"].get(syscall, None) or \
+                { "args": signatures.get(syscall, [["?", ""]]), "path": "undetermined", "line": "undetermined", }
 
-    instrs = p.parse()
-    return process(arch, instrs, arch_syscalls, includepath, [], [], [])
+            syscalls.append({
+                "nr": nr,
+                "name": syscall,
+                "args": make_searchable(info["args"]),
+                "path": info["path"],
+                "line": info["line"],
+            })
+        output.write(json.dumps({
+            "syscalls": syscalls,
+        }))
     
 load_signatures(signatures)
 load_syscalls(arch_specific, arch_generic)
 
+targets = []
+
+for arch in archlist:
+    if not arch in mapping.arches:
+        logging.warning(f"no rules defined for {arch}")
+        continue
+
+    unistd = cache / version / "headers" / arch / "include" / "asm" / "unistd.h"
+    if not unistd.exists():
+        logging.warning(f"{unistd} cannot be found")
+        continue
+
+    with open(unistd, "r") as f:
+        unistd = f.read()
+
+    rules = []
+    arch_rules = mapping.rules[arch]
+    if arch_rules:
+        for rule in arch_rules.values():
+            args = mapping.Args(arch, rule.abi, unistd)
+            if rule.condition(args):
+                rules.append(rule)
+    else:
+        rules = [mapping.Rule("generic", [])]
+
+    if len(rules) == 1:
+        rules[0].abi = "generic"
+
+    for rule in rules:
+        targets.append(ProcessArgs(arch, rule.abi, rule.defs))
+
 with Pool(processes) as pool:
-    results = pool.map(trampoline, archlist)
+    pool.map(process, targets)
+
 archinfo = {}
-for arch, abilist in zip(archlist, results):
-    archinfo[arch] = abilist
+for target in targets:
+    archinfo.setdefault(target.arch, []).append(target.abi)
 
 with open(json_dir / "info.json", "w+") as info:
     for v in archinfo.values():

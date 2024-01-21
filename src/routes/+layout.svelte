@@ -18,10 +18,6 @@
 		elements: { root }
 	} = createLabel();
 
-	const versions = {
-		v5: ['latest']
-	};
-
 	const {
 		elements: { trigger, overlay, content, title, description, close, portalled },
 		states: { open }
@@ -60,13 +56,21 @@
 				<Select
 					labelText="Arch"
 					options={data.arches}
-					defaultVal={new URL($page.url).pathname.substring(1) || 'x86-64'}
+					defaultVal={data.arch}
 					onValueChange={({ next }) => {
-						goto(`/${next}`, { invalidateAll: true, noScroll: true });
+						goto(`/${data.version}/${next}`, { invalidateAll: true, noScroll: true });
 						return next;
 					}}
 				/>
-				<Select labelText="Version" options={versions} defaultVal="latest" />
+				<Select
+					labelText="Version"
+					options={data.versions}
+					defaultVal={data.latest}
+					onValueChange={({ next }) => {
+						goto(`/${next}/${data.arch}`, { invalidateAll: true, noScroll: true });
+						return next;
+					}}
+				/>
 				<div />
 				<div class="flex flex-col col-span-2 gap-1">
 					<label
