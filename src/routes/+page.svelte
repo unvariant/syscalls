@@ -4,6 +4,7 @@
 	import Fuse from 'fuse.js';
 	import { FaceFrown, Icon } from 'svelte-hero-icons';
 	import type { Arg, Syscall } from '$lib';
+	import SyscallDialog from '$lib/SyscallDialog.svelte';
 	let swapNumberFormat = false;
 	export let data: PageData;
 	let registers = ['rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9'];
@@ -24,12 +25,12 @@
 	});
 	const padArrayRight = <T>(array: T[], length: number, fillWith: T) =>
 		array.concat(new Array(length).fill(fillWith)).slice(0, length);
-	const modifiers = ["struct", "union", "enum", "unsigned"];
+	const modifiers = ['struct', 'union', 'enum', 'unsigned'];
 	const splitType = (type: string) => {
-		let last2 = "";
+		let last2 = '';
 		let rest = type;
-		let modifier = "";
-		if (rest.endsWith("*")) {
+		let modifier = '';
+		if (rest.endsWith('*')) {
 			last2 = rest.split(' ').splice(-2).join(' ');
 			rest = rest.slice(0, rest.length - last2.length);
 		}
@@ -70,39 +71,33 @@
 				</tr>
 			</thead>
 			<tbody class="border border-white">
-				{#each searchResults as { name, nr, args, path, line }}
+				{#each searchResults as syscall}
+					{@const { name, nr, args, path, line } = syscall}
 					<tr>
 						<td
-							class="px-1.5 py-2 text-center border w-16 border-slate-100 dark:border-neutral-800"
+							class="px-1.5 py-2 text-center border w-16 dark:border-neutral-800 border-slate-100"
 						>
 							{nr > 1023 !== swapNumberFormat ? '0x' + nr.toString(16) : nr}
 						</td>
-						<td class="min-w-0 px-3 py-2 border dark:border-neutral-800 border-slate-100 whitespace-nowrap">
-							{#if path != 'undetermined'}
-								<a
-									href="https://elixir.bootlin.com/linux/{ data.version }/source/{ path }#L{ line }"
-									target="_blank"
-								>
-									{name}
-								</a>
-							{:else}
-								{name}
-							{/if}
+						<td
+							class="min-w-0 px-3 py-2 border dark:border-neutral-800 border-slate-100 whitespace-nowrap"
+						>
+							<SyscallDialog {syscall} version={data.version}/>
 						</td>
-						{#each padArrayRight( args, 6, { fulltype: '', search: '', name: ''} ) as { fulltype, search, name}}
-							{@const { modifier, rest, last2 } = splitType(fulltype) }
+						{#each padArrayRight( args, 6, { fulltype: '', search: '', name: '' } ) as { fulltype, search, name }}
+							{@const { modifier, rest, last2 } = splitType(fulltype)}
 							<td
 								class="min-w-0 px-3 py-2 border border-l-0 dark:border-neutral-800 border-slate-100"
 							>
 								<a
-									href="https://elixir.bootlin.com/linux/{ data.version }/C/ident/{ search }"
+									href="https://elixir.bootlin.com/linux/{data.version}/C/ident/{search}"
 									target="_blank"
 								>
-									<span class="font-semibold dark:text-neutral-200 text-xs">{ modifier }</span>
-									<span class="font-semibold">{ rest }</span>
-									<span class="font-semibold whitespace-nowrap">{ last2 }</span>
-									<br>
-									<span class="text-slate-500 dark:text-neutral-400 block">{name}</span>
+									<span class="text-xs font-semibold dark:text-neutral-200">{modifier}</span>
+									<span class="font-semibold">{rest}</span>
+									<span class="font-semibold whitespace-nowrap">{last2}</span>
+									<br />
+									<span class="block text-slate-500 dark:text-neutral-400">{name}</span>
 								</a>
 							</td>
 						{/each}
