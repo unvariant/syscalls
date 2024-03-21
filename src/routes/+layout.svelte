@@ -64,7 +64,7 @@
 				<Select
 					labelText="Version"
 					options={data.versions}
-					defaultVal={data.latest}
+					defaultVal={data.version}
 					onValueChange={({ next }) => {
 						goto(`/${next}/${data.arch}`, { invalidateAll: true, noScroll: true });
 						return next;
