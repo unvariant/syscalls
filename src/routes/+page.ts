@@ -9,7 +9,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
   const arch = "x86-64";
 
   const res = await fetch(`/${latest}/${arch}.json`);
-  if (res.status !== 200) throw error(404, "Not found") ;
+  if (res.status !== 200) error(404, "Not found");
   const result = await res.json();
   result.version = latest;
   result.arch = arch;

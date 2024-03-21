@@ -14,5 +14,6 @@ export const load: PageLoad = async ({ fetch, params }) => {
 	for (const [arch, abilist] of Object.entries<string[]>(arches)) {
 		arches[arch] = abilist.map((abi) => `${arch}-${abi}`);
 	}
+
 	return { arches, versions, latest, version, arch: myarch };
 };

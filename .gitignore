@@ -14,3 +14,4 @@ vite.config.ts.timestamp-*
 cache/
 parse/__pycache__/
 /json
+_build/

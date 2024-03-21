@@ -28,6 +28,7 @@ arches = [
     "openrisc",
     "parisc",
     "powerpc",
+    "riscv",
     "s390",
     "score",
     "sparc",
