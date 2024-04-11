@@ -8,5 +8,10 @@ export const load: PageLoad = async ({ fetch, params }) => {
 	const result = await res.json();
   result.version = params.version;
   result.arch = params.arch;
+
+  const regs = await fetch(`/registers.json`);
+  const allregs = await regs.json();
+  result.registers = allregs[params.arch];
+
   return result;
 };

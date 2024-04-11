@@ -7,7 +7,7 @@
 	import SyscallDialog from '$lib/SyscallDialog.svelte';
 	let swapNumberFormat = false;
 	export let data: PageData;
-	let registers = ['rdi', 'rsi', 'rdx', 'r10', 'r8', 'r9'];
+	$: registers = data.registers || [];
 	// return a nice looking message when no keys are found
 	$: fuse = new Fuse<Syscall>(data.syscalls, {
 		keys: [
